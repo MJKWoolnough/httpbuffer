@@ -24,7 +24,8 @@ var (
 	}
 	gzipPool = sync.Pool{
 		New: func() interface{} {
-			g := gzip.NewWriterLevel(nil, gzip.BestCompression)
+			g, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
+			return g
 		},
 	}
 )
@@ -100,7 +101,7 @@ type responseWriter struct {
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {
-	return r.buffer.Write(p)
+	return r.Writer.Write(p)
 }
 
 type responsePusherWriter struct {

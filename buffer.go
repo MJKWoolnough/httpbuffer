@@ -8,8 +8,9 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
+
+	"github.com/MJKWoolnough/httpencoding"
 )
 
 var (
@@ -42,26 +43,25 @@ type Handler struct {
 	Compress bool
 }
 
+type compress bool
+
+func (c *compress) Handle(_ http.ResponseWriter, _ *http.Request, encoding string) {
+	switch encoding {
+	case "gzip":
+		*c = true
+		return true
+	case "":
+		return true
+	}
+	return false
+}
+
 // ServeHTTP implements the http.Handler interface
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var compressed bool
+	var compressed compress
 
 	if h.Compress {
-		accepts := r.Header.Get("Accept-Encoding")
-		for {
-			p := strings.IndexByte(accepts, ',')
-			if p < 0 {
-				if strings.TrimSpace(accepts) == "gzip" {
-					compressed = true
-				}
-				break
-			}
-			if strings.TrimSpace(accepts[:p]) == "gzip" {
-				compressed = true
-				break
-			}
-			accepts = accepts[p+1:]
-		}
+		httpencoding.HandleEncoding(w, r, &compressed)
 	}
 
 	buf := bufferPool.Get().(*bytes.Buffer)

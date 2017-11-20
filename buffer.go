@@ -45,7 +45,7 @@ type Handler struct {
 
 type compress bool
 
-func (c *compress) Handle(_ http.ResponseWriter, _ *http.Request, encoding string) {
+func (c *compress) Handle(encoding string) {
 	switch encoding {
 	case "gzip":
 		*c = true
@@ -61,7 +61,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var compressed compress
 
 	if h.Compress {
-		httpencoding.HandleEncoding(w, r, &compressed)
+		httpencoding.HandleEncoding(r, &compressed)
 	}
 
 	buf := bufferPool.Get().(*bytes.Buffer)

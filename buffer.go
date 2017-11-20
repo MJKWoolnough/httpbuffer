@@ -45,7 +45,7 @@ type Handler struct {
 
 type compress bool
 
-func (c *compress) Handle(encoding string) {
+func (c *compress) Handle(encoding string) bool {
 	switch encoding {
 	case "gzip":
 		*c = true

@@ -4,6 +4,7 @@ package httpbuffer
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/gzip"
 	"io"
 	"net/http"
@@ -31,6 +32,12 @@ var (
 			return g
 		},
 	}
+	deflatePool = sync.Pool{
+		New: func() interface{} {
+			d, _ := flate.NewWriter(nil, flate.BestCompression)
+			return d
+		},
+	}
 )
 
 // Handler wraps a http.Handler and provides a buffer and possible gzip
@@ -43,7 +50,10 @@ type Handler struct {
 const (
 	encodingIdentity = iota + 1
 	encodingGzip
+	encodingDeflate
 )
+
+const contentEncoding = "Content-Encoding"
 
 type encodingType uint8
 
@@ -53,6 +63,8 @@ func (e *encodingType) Handle(encoding string) bool {
 		*e = encodingIdentity
 	case "gzip", "x-gzip":
 		*e = encodingGzip
+	case "deflate":
+		*e = encodingDeflate
 	default:
 		return false
 	}
@@ -94,7 +106,19 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		*resp = responsePusherWriter{}
 		gzipPool.Put(g)
-		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set(contentEncoding, "gzip")
+	case encodingDeflate:
+		d := deflatePool.Get().(*flate.Writer)
+		d.Reset(buf)
+		resp.Writer = d
+
+		h.Handler.ServeHTTP(rw, r)
+
+		d.Close()
+
+		*resp = responsePusherWriter{}
+		deflatePool.Put(d)
+		w.Header().Set(contentEncoding, "deflate")
 	default:
 		resp.Writer = buf
 		h.Handler.ServeHTTP(rw, r)

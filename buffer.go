@@ -1,5 +1,5 @@
 // Package httpbuffer provides a buffer for HTTP requests so that the
-// Content-Length may be set.
+// Content-Length may be set and compression applied for dynamic pages.
 package httpbuffer
 
 import (
@@ -36,32 +36,38 @@ var (
 // Handler wraps a http.Handler and provides a buffer and possible gzip
 // compression. It buffers the Writes and sends the Content-Length header
 // before Writing the buffer to the client.
-//
-// The compress flag, when true, enables gzip compression for the output.
 type Handler struct {
 	http.Handler
-	Compress bool
 }
 
-type compress bool
+const (
+	encodingIdentity = iota + 1
+	encodingGzip
+)
 
-func (c *compress) Handle(encoding string) bool {
+type encodingType uint8
+
+func (e *encodingType) Handle(encoding string) bool {
 	switch encoding {
-	case "gzip":
-		*c = true
-		return true
 	case "":
-		return true
+		*e = encodingIdentity
+	case "gzip", "x-gzip":
+		*e = encodingGzip
+	default:
+		return false
 	}
-	return false
+	return true
 }
 
 // ServeHTTP implements the http.Handler interface
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var compressed compress
+	var encoding encodingType
 
-	if h.Compress {
-		httpencoding.HandleEncoding(r, &compressed)
+	httpencoding.HandleEncoding(r, &encoding)
+
+	if encoding == 0 {
+		httpencoding.InvalidEncoding(w)
+		return
 	}
 
 	buf := bufferPool.Get().(*bytes.Buffer)
@@ -76,7 +82,8 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rw = &resp.responseWriter
 	}
 
-	if compressed {
+	switch encoding {
+	case encodingGzip:
 		g := gzipPool.Get().(*gzip.Writer)
 		g.Reset(buf)
 		resp.Writer = g
@@ -88,7 +95,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		*resp = responsePusherWriter{}
 		gzipPool.Put(g)
 		w.Header().Set("Content-Encoding", "gzip")
-	} else {
+	default:
 		resp.Writer = buf
 		h.Handler.ServeHTTP(rw, r)
 		*resp = responsePusherWriter{}

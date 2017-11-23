@@ -73,7 +73,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	encoding.Close(resp.Writer)
 	*resp = responsePusherWriter{}
 	if enc := encoding.Name(); enc != "" {
-		w.Header().Set("Contend-Encoding", enc)
+		w.Header().Set("Content-Encoding", enc)
 	}
 
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))

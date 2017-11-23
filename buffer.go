@@ -17,7 +17,7 @@ var (
 	BufferSize = 128 << 10
 	bufferPool = sync.Pool{
 		New: func() interface{} {
-			return bytes.NewBuffer(make([]byte, 0, bufferSize))
+			return bytes.NewBuffer(make([]byte, 0, BufferSize))
 		},
 	}
 

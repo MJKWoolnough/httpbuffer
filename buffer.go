@@ -4,8 +4,6 @@ package httpbuffer
 
 import (
 	"bytes"
-	"compress/flate"
-	"compress/gzip"
 	"io"
 	"net/http"
 	"strconv"
@@ -15,27 +13,17 @@ import (
 )
 
 var (
+	// BufferSize determines the initial size of the buffer
+	BufferSize = 128 << 10
 	bufferPool = sync.Pool{
 		New: func() interface{} {
-			return bytes.NewBuffer(make([]byte, 0, 128<<10))
+			return bytes.NewBuffer(make([]byte, 0, bufferSize))
 		},
 	}
 
 	responsePool = sync.Pool{
 		New: func() interface{} {
 			return new(responsePusherWriter)
-		},
-	}
-	gzipPool = sync.Pool{
-		New: func() interface{} {
-			g, _ := gzip.NewWriterLevel(nil, gzip.BestCompression)
-			return g
-		},
-	}
-	deflatePool = sync.Pool{
-		New: func() interface{} {
-			d, _ := flate.NewWriter(nil, flate.BestCompression)
-			return d
 		},
 	}
 )
@@ -47,28 +35,13 @@ type Handler struct {
 	http.Handler
 }
 
-const (
-	encodingIdentity = iota + 1
-	encodingGzip
-	encodingDeflate
-)
+type encodingType struct {
+	Encoding
+}
 
-const contentEncoding = "Content-Encoding"
-
-type encodingType uint8
-
-func (e *encodingType) Handle(encoding string) bool {
-	switch encoding {
-	case "":
-		*e = encodingIdentity
-	case "gzip", "x-gzip":
-		*e = encodingGzip
-	case "deflate":
-		*e = encodingDeflate
-	default:
-		return false
-	}
-	return true
+func (e *encodingType) Handle(encoding string) (ok bool) {
+	e.Encoding, ok = encodings[encoding]
+	return ok
 }
 
 // ServeHTTP implements the http.Handler interface
@@ -77,10 +50,11 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	httpencoding.HandleEncoding(r, &encoding)
 
-	if encoding == 0 {
+	if encoding.Encoding == nil {
 		httpencoding.InvalidEncoding(w)
 		return
 	}
+	httpencoding.ClearEncoding(r)
 
 	buf := bufferPool.Get().(*bytes.Buffer)
 	resp := responsePool.Get().(*responsePusherWriter)
@@ -94,36 +68,14 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rw = &resp.responseWriter
 	}
 
-	switch encoding {
-	case encodingGzip:
-		g := gzipPool.Get().(*gzip.Writer)
-		g.Reset(buf)
-		resp.Writer = g
-
-		h.Handler.ServeHTTP(rw, r)
-
-		g.Close()
-
-		*resp = responsePusherWriter{}
-		gzipPool.Put(g)
-		w.Header().Set(contentEncoding, "gzip")
-	case encodingDeflate:
-		d := deflatePool.Get().(*flate.Writer)
-		d.Reset(buf)
-		resp.Writer = d
-
-		h.Handler.ServeHTTP(rw, r)
-
-		d.Close()
-
-		*resp = responsePusherWriter{}
-		deflatePool.Put(d)
-		w.Header().Set(contentEncoding, "deflate")
-	default:
-		resp.Writer = buf
-		h.Handler.ServeHTTP(rw, r)
-		*resp = responsePusherWriter{}
+	resp.Writer = encoding.Open(buf)
+	h.Handler.ServeHTTP(rw, r)
+	encoding.Close(resp.Writer)
+	*resp = responsePusherWriter{}
+	if enc := encoding.Name(); enc != "" {
+		w.Header().Set("Contend-Encoding", enc)
 	}
+
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 
 	w.Write(buf.Bytes())

@@ -59,6 +59,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	resp := responsePool.Get().(*responsePusherWriter)
 	resp.ResponseWriter = w
+	resp.Status = 200
 
 	var rw http.ResponseWriter
 	if pusher, ok := w.(http.Pusher); ok {
@@ -77,6 +78,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
+	if resp.Status != 200 {
+		w.WriteHeader(resp.Status)
+	}
 
 	w.Write(buf.Bytes())
 
@@ -88,11 +92,16 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type responseWriter struct {
 	http.ResponseWriter
+	Status int
 	Writer io.Writer
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {
 	return r.Writer.Write(p)
+}
+
+func (r *responseWriter) WriteHeader(s int) {
+	r.Status = s
 }
 
 type responsePusherWriter struct {

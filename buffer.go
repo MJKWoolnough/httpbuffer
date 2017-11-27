@@ -15,15 +15,14 @@ import (
 var (
 	// BufferSize determines the initial size of the buffer
 	BufferSize = 128 << 10
-	bufferPool = sync.Pool{
-		New: func() interface{} {
-			return bytes.NewBuffer(make([]byte, 0, BufferSize))
-		},
-	}
 
 	responsePool = sync.Pool{
 		New: func() interface{} {
-			return new(responsePusherWriter)
+			return &responsePusherWriter{
+				responseWriter: responseWriter{
+					Buffer: bytes.NewBuffer(make([]byte, 0, BufferSize)),
+				},
+			}
 		},
 	}
 )
@@ -56,7 +55,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	httpencoding.ClearEncoding(r)
 
-	buf := bufferPool.Get().(*bytes.Buffer)
 	resp := responsePool.Get().(*responsePusherWriter)
 	resp.ResponseWriter = w
 	resp.Status = 200
@@ -69,31 +67,32 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rw = &resp.responseWriter
 	}
 
-	resp.Writer = encoding.Open(buf)
+	resp.Writer = encoding.Open(resp.Buffer)
 	h.Handler.ServeHTTP(rw, r)
 	encoding.Close(resp.Writer)
-	*resp = responsePusherWriter{}
+	resp.Pusher = nil
+	resp.Writer = nil
+	resp.ResponseWriter = nil
 	if enc := encoding.Name(); enc != "" {
 		w.Header().Set("Content-Encoding", enc)
 	}
 
-	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
+	w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))
 	if resp.Status != 200 {
 		w.WriteHeader(resp.Status)
 	}
 
-	w.Write(buf.Bytes())
+	w.Write(resp.Buffer.Bytes())
 
+	resp.Buffer.Reset()
 	responsePool.Put(resp)
-
-	buf.Reset()
-	bufferPool.Put(buf)
 }
 
 type responseWriter struct {
 	http.ResponseWriter
 	Status int
 	Writer io.Writer
+	Buffer *bytes.Buffer
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {

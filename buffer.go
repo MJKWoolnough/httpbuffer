@@ -57,7 +57,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := responsePool.Get().(*responsePusherWriter)
 	resp.ResponseWriter = w
-	resp.Status = 200
 
 	var rw http.ResponseWriter
 	if pusher, ok := w.(http.Pusher); ok {
@@ -70,33 +69,43 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp.Writer = encoding.Open(resp.Buffer)
 	h.Handler.ServeHTTP(rw, r)
 	encoding.Close(resp.Writer)
-	resp.Pusher = nil
-	resp.Writer = nil
-	resp.ResponseWriter = nil
-	if enc := encoding.Name(); enc != "" {
+	if resp.Written == 0 {
+		resp.Buffer.Reset()
+	} else if enc := encoding.Name(); enc != "" {
 		w.Header().Set("Content-Encoding", enc)
 	}
 
 	w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))
-	if resp.Status != 200 {
+	if resp.Status > 0 {
 		w.WriteHeader(resp.Status)
 	}
 
-	w.Write(resp.Buffer.Bytes())
+	if resp.Written > 0 {
+		w.Write(resp.Buffer.Bytes())
+		resp.Buffer.Reset()
+	}
 
-	resp.Buffer.Reset()
+	*resp = responsePusherWriter{
+		responseWriter: responseWriter{
+			Buffer: resp.Buffer,
+		},
+	}
+
 	responsePool.Put(resp)
 }
 
 type responseWriter struct {
 	http.ResponseWriter
-	Status int
-	Writer io.Writer
-	Buffer *bytes.Buffer
+	Status  int
+	Writer  io.Writer
+	Written int64
+	Buffer  *bytes.Buffer
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {
-	return r.Writer.Write(p)
+	n, err := r.Writer.Write(p)
+	r.Written += int64(n)
+	return n, err
 }
 
 func (r *responseWriter) WriteHeader(s int) {

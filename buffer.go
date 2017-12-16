@@ -19,9 +19,7 @@ var (
 	responsePool = sync.Pool{
 		New: func() interface{} {
 			return &responsePusherWriter{
-				responseWriter: responseWriter{
-					Buffer: bytes.NewBuffer(make([]byte, 0, BufferSize)),
-				},
+				Buffer: bytes.NewBuffer(make([]byte, 0, BufferSize)),
 			}
 		},
 	}
@@ -86,9 +84,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	*resp = responsePusherWriter{
-		responseWriter: responseWriter{
-			Buffer: resp.Buffer,
-		},
+		Buffer: resp.Buffer,
 	}
 
 	responsePool.Put(resp)
@@ -99,7 +95,6 @@ type responseWriter struct {
 	Status  int
 	Writer  io.Writer
 	Written int64
-	Buffer  *bytes.Buffer
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {
@@ -115,4 +110,5 @@ func (r *responseWriter) WriteHeader(s int) {
 type responsePusherWriter struct {
 	responseWriter
 	http.Pusher
+	Buffer *bytes.Buffer
 }

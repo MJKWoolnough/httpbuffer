@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/MJKWoolnough/httpencoding"
+	"github.com/MJKWoolnough/httpwrap"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 
 	responsePool = sync.Pool{
 		New: func() interface{} {
-			return &responsePusherWriter{
+			return &responseWriter{
 				Buffer: bytes.NewBuffer(make([]byte, 0, BufferSize)),
 			}
 		},
@@ -53,19 +54,13 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	httpencoding.ClearEncoding(r)
 
-	resp := responsePool.Get().(*responsePusherWriter)
-	resp.ResponseWriter = w
-
-	var rw http.ResponseWriter
-	if pusher, ok := w.(http.Pusher); ok {
-		resp.Pusher = pusher
-		rw = resp
-	} else {
-		rw = &resp.responseWriter
-	}
+	resp := responsePool.Get().(*responseWriter)
 
 	resp.Writer = encoding.Open(resp.Buffer)
-	h.Handler.ServeHTTP(rw, r)
+	h.Handler.ServeHTTP(
+		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
+		r,
+	)
 	encoding.Close(resp.Writer)
 	if resp.Written == 0 {
 		resp.Buffer.Reset()
@@ -83,7 +78,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp.Buffer.Reset()
 	}
 
-	*resp = responsePusherWriter{
+	*resp = responseWriter{
 		Buffer: resp.Buffer,
 	}
 
@@ -91,10 +86,10 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type responseWriter struct {
-	http.ResponseWriter
 	Status  int
 	Writer  io.Writer
 	Written int64
+	Buffer  *bytes.Buffer
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {
@@ -105,10 +100,4 @@ func (r *responseWriter) Write(p []byte) (int, error) {
 
 func (r *responseWriter) WriteHeader(s int) {
 	r.Status = s
-}
-
-type responsePusherWriter struct {
-	responseWriter
-	http.Pusher
-	Buffer *bytes.Buffer
 }

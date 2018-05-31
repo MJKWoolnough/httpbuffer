@@ -57,8 +57,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp := responsePool.Get().(*responseWriter)
 
 	resp.Writer = encoding.Open(resp.Buffer)
+	sw, _ := resp.Writer.(httpwrap.StringWriter)
 	h.Handler.ServeHTTP(
-		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
+		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(sw), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
 		r,
 	)
 	encoding.Close(resp.Writer)

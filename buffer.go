@@ -3,7 +3,6 @@
 package httpbuffer
 
 import (
-	"bytes"
 	"io"
 	"net/http"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/MJKWoolnough/httpencoding"
 	"github.com/MJKWoolnough/httpwrap"
+	"github.com/MJKWoolnough/memio"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 	responsePool = sync.Pool{
 		New: func() interface{} {
 			return &responseWriter{
-				Buffer: bytes.NewBuffer(make([]byte, 0, BufferSize)),
+				Buffer: make(memio.Buffer, 0, BufferSize),
 			}
 		},
 	}
@@ -56,7 +56,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := responsePool.Get().(*responseWriter)
 
-	resp.Writer = encoding.Open(resp.Buffer)
+	resp.Writer = encoding.Open(&resp.Buffer)
 	sw, _ := resp.Writer.(httpwrap.StringWriter)
 	h.Handler.ServeHTTP(
 		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(sw), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
@@ -64,23 +64,21 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 	encoding.Close(resp.Writer)
 	if resp.Written == 0 {
-		resp.Buffer.Reset()
 	} else if enc := encoding.Name(); enc != "" {
 		w.Header().Set("Content-Encoding", enc)
 	}
 
-	w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))
+	w.Header().Set("Content-Length", strconv.Itoa(len(resp.Buffer)))
 	if resp.Status > 0 {
 		w.WriteHeader(resp.Status)
 	}
 
 	if resp.Written > 0 {
-		w.Write(resp.Buffer.Bytes())
-		resp.Buffer.Reset()
+		w.Write(resp.Buffer)
 	}
 
 	*resp = responseWriter{
-		Buffer: resp.Buffer,
+		Buffer: resp.Buffer[:0],
 	}
 
 	responsePool.Put(resp)
@@ -90,7 +88,7 @@ type responseWriter struct {
 	Status  int
 	Writer  io.Writer
 	Written int64
-	Buffer  *bytes.Buffer
+	Buffer  memio.Buffer
 }
 
 func (r *responseWriter) Write(p []byte) (int, error) {

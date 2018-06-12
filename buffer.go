@@ -1,6 +1,6 @@
 // Package httpbuffer provides a buffer for HTTP requests so that the
 // Content-Length may be set and compression applied for dynamic pages.
-package httpbuffer
+package httpbuffer // import "vimagination.zapto.org/httpbuffer"
 
 import (
 	"io"
@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/MJKWoolnough/httpencoding"
-	"github.com/MJKWoolnough/httpwrap"
-	"github.com/MJKWoolnough/memio"
+	"vimagination.zapto.org/httpencoding"
+	"vimagination.zapto.org/httpwrap"
+	"vimagination.zapto.org/memio"
 )
 
 var (

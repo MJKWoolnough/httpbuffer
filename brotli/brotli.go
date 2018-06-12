@@ -1,12 +1,12 @@
 // Package brotli provides an Encoder for the httpbuffer package that uses
 // brotli compression.
-package brotli
+package brotli // import "vimagination.zapto.org/httpbuffer/brotli"
 
 import (
 	"io"
 
-	"github.com/MJKWoolnough/httpbuffer"
 	"github.com/google/brotli/go/cbrotli"
+	"vimagination.zapto.org/httpbuffer"
 )
 
 type cbrotliWriter struct {

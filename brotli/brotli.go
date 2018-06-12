@@ -9,6 +9,14 @@ import (
 	"github.com/google/brotli/go/cbrotli"
 )
 
+type cbrotliWriter struct {
+	*cbrotli.Writer
+}
+
+func (c cbrotliWriter) WriteString(str string) (int, error) {
+	return c.Write([]byte(str))
+}
+
 var (
 	// Compression sets the compression options for the brotli encoder
 	Compression = cbrotli.WriterOptions{
@@ -19,11 +27,11 @@ var (
 type encoding struct{}
 
 func (encoding) Open(w io.Writer) io.Writer {
-	return cbrotli.NewWriter(w, Compression)
+	return cbrotliWriter{cbrotli.NewWriter(w, Compression)}
 }
 
 func (encoding) Close(w io.Writer) {
-	w.(*cbrotli.Writer).Close()
+	w.(cbrotliWriter).Close()
 }
 
 func (encoding) Name() string {

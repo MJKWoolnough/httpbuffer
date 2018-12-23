@@ -37,7 +37,7 @@ type encodingType struct {
 	Encoding
 }
 
-func (e *encodingType) Handle(encoding string) (ok bool) {
+func (e *encodingType) Handle(encoding httpencoding.Encoding) (ok bool) {
 	e.Encoding, ok = encodings[encoding]
 	return ok
 }

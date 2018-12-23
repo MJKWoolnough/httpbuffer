@@ -2,9 +2,11 @@ package httpbuffer
 
 import (
 	"io"
+
+	"vimagination.zapto.org/httpencoding"
 )
 
-var encodings = map[string]Encoding{
+var encodings = map[httpencoding.Encoding]Encoding{
 	"": identity{},
 }
 
@@ -36,5 +38,5 @@ type Encoding interface {
 // Register registers the encoding for the buffers to use. Should not be used
 // passed initialisation.
 func Register(e Encoding) {
-	encodings[e.Name()] = e
+	encodings[httpencoding.Encoding(e.Name())] = e
 }

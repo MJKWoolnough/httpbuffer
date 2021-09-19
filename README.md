@@ -1,6 +1,6 @@
 # httpbuffer
 --
-    import "github.com/MJKWoolnough/httpbuffer"
+    import "vimagination.zapto.org/httpbuffer"
 
 Package httpbuffer provides a buffer for HTTP requests so that the
 Content-Length may be set and compression applied for dynamic pages.

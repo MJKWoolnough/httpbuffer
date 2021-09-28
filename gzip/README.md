@@ -1,9 +1,9 @@
 # gzip
 --
-    import "github.com/MJKWoolnough/httpbuffer/gzip"
+    import "vimagination.zapto.org/httpbuffer/gzip"
 
 Package gzip provides an Encoder for the httpbuffer package that uses gzip
-### compression
+compression.
 
 ## Usage
 

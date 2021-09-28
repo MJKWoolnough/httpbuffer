@@ -1,6 +1,6 @@
 # deflate
 --
-    import "github.com/MJKWoolnough/httpbuffer/deflate"
+    import "vimagination.zapto.org/httpbuffer/deflate"
 
 Package deflate provides an Encoder for the httpbuffer package that uses deflate
 ### compression

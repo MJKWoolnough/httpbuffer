@@ -1,6 +1,6 @@
 # brotli
 --
-    import "github.com/MJKWoolnough/httpbuffer/brotli"
+    import "vimagination.zapto.org/httpbuffer/brotli"
 
 Package brotli provides an Encoder for the httpbuffer package that uses brotli
 compression.

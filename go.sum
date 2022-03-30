@@ -1,0 +1,8 @@
+github.com/google/brotli/go/cbrotli v0.0.0-20220110100810-f4153a09f87c h1:r47YgJ24CPvKxwxxHYPuE+FX1GgNtV93E7uaknKW0HU=
+github.com/google/brotli/go/cbrotli v0.0.0-20220110100810-f4153a09f87c/go.mod h1:nOPhAkwVliJdNTkj3gXpljmWhjc4wCaVqbMJcPKWP4s=
+vimagination.zapto.org/httpencoding v1.0.0 h1:sSibnPq1pKROK4IBTNNCAKRPCijIZAaMQUBf/Mn5GA0=
+vimagination.zapto.org/httpencoding v1.0.0/go.mod h1:J2hxhPn3VjWestQQ036OYpDwwerfvIHmbtmTqpKVe0w=
+vimagination.zapto.org/httpwrap v1.0.0 h1:v2q76mq3Ol+t4UX2DsDXf7ojNy5ZHzAQgCtBSt16OEI=
+vimagination.zapto.org/httpwrap v1.0.0/go.mod h1:T2DY+GI88MtRhGCRLEkWir2xrUwuGpWFYPoyJpKGHT8=
+vimagination.zapto.org/memio v1.0.0 h1:r0GDf430aNuGpOAV57UTvbUzAf82UclRyGG/pBp1uvU=
+vimagination.zapto.org/memio v1.0.0/go.mod h1:zHGDKp2tyvF4IAfLti4pKYqCJucXYmmKMb3UMrCHK/4=

@@ -8,10 +8,8 @@ compression.
 ## Usage
 
 ```go
-var (
-	// Compression sets the compression options for the brotli encoder
-	Compression = cbrotli.WriterOptions{
-		Quality: 4,
-	}
-)
+var Compression = cbrotli.WriterOptions{
+	Quality: 4,
+}
 ```
+Compression sets the compression options for the brotli encoder.

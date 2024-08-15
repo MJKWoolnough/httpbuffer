@@ -9,7 +9,7 @@ compression.
 
 ```go
 var (
-	// Compression sets the compression level for the gzip encoder
+	// Compression sets the compression level for the gzip encoder.
 	Compression = gzip.BestCompression
 )
 ```

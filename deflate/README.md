@@ -9,7 +9,7 @@ Package deflate provides an Encoder for the httpbuffer package that uses deflate
 
 ```go
 var (
-	// Compression sets the compression level for the deflate encoder
+	// Compression sets the compression level for the deflate encoder.
 	Compression = flate.BestCompression
 )
 ```

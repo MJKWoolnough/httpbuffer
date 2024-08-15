@@ -17,12 +17,10 @@ func (c cbrotliWriter) WriteString(str string) (int, error) {
 	return c.Write([]byte(str))
 }
 
-var (
-	// Compression sets the compression options for the brotli encoder
-	Compression = cbrotli.WriterOptions{
-		Quality: 4,
-	}
-)
+// Compression sets the compression options for the brotli encoder.
+var Compression = cbrotli.WriterOptions{
+	Quality: 4,
+}
 
 type encoding struct{}
 

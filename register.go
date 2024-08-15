@@ -22,16 +22,16 @@ func (identity) Name() string {
 	return ""
 }
 
-// Encoding represents a type that applies a Coding to a byte stream
+// Encoding represents a type that applies a Coding to a byte stream.
 type Encoding interface {
-	// Open takes a buffer and returns an encoder-wrapped buffer
+	// Open takes a buffer and returns an encoder-wrapped buffer.
 	Open(io.Writer) io.Writer
 
 	// Close returns the encoder-wrapped buffer to flush/close and release
-	// resources
+	// resources.
 	Close(io.Writer)
 
-	// Name returns the identifier for the encoding algorithm
+	// Name returns the identifier for the encoding algorithm.
 	Name() string
 }
 

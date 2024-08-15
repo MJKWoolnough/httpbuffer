@@ -19,7 +19,7 @@ func (f flateWriter) WriteString(str string) (int, error) {
 }
 
 var (
-	// Compression sets the compression level for the deflate encoder
+	// Compression sets the compression level for the deflate encoder.
 	Compression = flate.BestCompression
 
 	pool = sync.Pool{

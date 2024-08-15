@@ -19,7 +19,7 @@ func (g gzipWriter) WriteString(str string) (int, error) {
 }
 
 var (
-	// Compression sets the compression level for the gzip encoder
+	// Compression sets the compression level for the gzip encoder.
 	Compression = gzip.BestCompression
 
 	pool = sync.Pool{

@@ -42,7 +42,7 @@ func (e *encodingType) Handle(encoding httpencoding.Encoding) (ok bool) {
 	return ok
 }
 
-// ServeHTTP implements the http.Handler interface
+// ServeHTTP implements the http.Handler interface.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var encoding encodingType
 

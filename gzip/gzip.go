@@ -34,12 +34,15 @@ type encoding struct{}
 
 func (encoding) Open(w io.Writer) io.Writer {
 	g := pool.Get().(gzipWriter)
+
 	g.Reset(w)
+
 	return g
 }
 
 func (encoding) Close(w io.Writer) {
 	g := w.(gzipWriter)
+
 	g.Close()
 	pool.Put(w)
 }

@@ -35,11 +35,13 @@ type encoding struct{}
 func (encoding) Open(w io.Writer) io.Writer {
 	d := pool.Get().(flateWriter)
 	d.Reset(w)
+
 	return d
 }
 
 func (encoding) Close(w io.Writer) {
 	d := w.(flateWriter)
+
 	d.Close()
 	pool.Put(w)
 }

@@ -39,6 +39,7 @@ type encodingType struct {
 
 func (e *encodingType) Handle(encoding httpencoding.Encoding) (ok bool) {
 	e.Encoding, ok = encodings[encoding]
+
 	return ok
 }
 
@@ -52,17 +53,20 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpencoding.InvalidEncoding(w)
 		return
 	}
+
 	httpencoding.ClearEncoding(r)
 
 	resp := responsePool.Get().(*responseWriter)
-
 	resp.Writer = encoding.Open(&resp.Buffer)
 	sw, _ := resp.Writer.(httpwrap.StringWriter)
+
 	h.Handler.ServeHTTP(
 		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(sw), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
 		r,
 	)
+
 	encoding.Close(resp.Writer)
+
 	if resp.Written == 0 {
 	} else if enc := encoding.Name(); enc != "" {
 		w.Header().Set("Content-Encoding", enc)
@@ -94,6 +98,7 @@ type responseWriter struct {
 func (r *responseWriter) Write(p []byte) (int, error) {
 	n, err := r.Writer.Write(p)
 	r.Written += int64(n)
+
 	return n, err
 }
 

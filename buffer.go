@@ -3,6 +3,7 @@
 package httpbuffer // import "vimagination.zapto.org/httpbuffer"
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 
 	"vimagination.zapto.org/httpencoding"
 	"vimagination.zapto.org/httpwrap"
-	"vimagination.zapto.org/memio"
 )
 
 var (
@@ -18,10 +18,8 @@ var (
 	BufferSize = 128 << 10
 
 	responsePool = sync.Pool{
-		New: func() interface{} {
-			return &responseWriter{
-				Buffer: make(memio.Buffer, 0, BufferSize),
-			}
+		New: func() any {
+			return new(responseWriter)
 		},
 	}
 )
@@ -65,48 +63,43 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := responsePool.Get().(*responseWriter)
 	resp.Writer = encoding.Open(&resp.Buffer)
-	sw, _ := resp.Writer.(httpwrap.StringWriter)
 
 	h.Handler.ServeHTTP(
-		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(sw), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
+		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(nil), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
 		r,
 	)
 
 	encoding.Close(resp.Writer)
 
-	if resp.Written == 0 {
+	written := resp.Buffer.Len()
+
+	if written == 0 {
 	} else if enc := encoding.Name(); enc != "" {
 		w.Header().Set("Content-Encoding", enc)
 	}
 
-	w.Header().Set("Content-Length", strconv.Itoa(len(resp.Buffer)))
+	w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))
+
 	if resp.Status > 0 {
 		w.WriteHeader(resp.Status)
+	} else if written == 0 {
+		w.WriteHeader(http.StatusNoContent)
 	}
 
-	if resp.Written > 0 {
-		w.Write(resp.Buffer)
+	if written > 0 {
+		w.Write(resp.Buffer.Bytes())
 	}
 
-	*resp = responseWriter{
-		Buffer: resp.Buffer[:0],
-	}
-
+	resp.Status = 0
+	resp.Writer = nil
+	resp.Buffer.Reset()
 	responsePool.Put(resp)
 }
 
 type responseWriter struct {
-	Status  int
-	Writer  io.Writer
-	Written int64
-	Buffer  memio.Buffer
-}
-
-func (r *responseWriter) Write(p []byte) (int, error) {
-	n, err := r.Writer.Write(p)
-	r.Written += int64(n)
-
-	return n, err
+	Status int
+	io.Writer
+	Buffer bytes.Buffer
 }
 
 func (r *responseWriter) WriteHeader(s int) {

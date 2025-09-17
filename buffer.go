@@ -38,6 +38,12 @@ type encodingType struct {
 }
 
 func (e *encodingType) Handle(encoding httpencoding.Encoding) (ok bool) {
+	if httpencoding.IsWildcard(encoding) && !httpencoding.IsDisallowedInWildcard(encoding, "") {
+		e.Encoding = encodings[""]
+
+		return false
+	}
+
 	e.Encoding, ok = encodings[encoding]
 
 	return ok
@@ -51,6 +57,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if encoding.Encoding == nil {
 		httpencoding.InvalidEncoding(w)
+
 		return
 	}
 

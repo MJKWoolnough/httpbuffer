@@ -1,6 +1,6 @@
 module vimagination.zapto.org/httpbuffer
 
-go 1.23
+go 1.24
 
 require (
 	github.com/google/brotli/go/cbrotli v1.1.0

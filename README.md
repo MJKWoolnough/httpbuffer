@@ -1,60 +1,64 @@
 # httpbuffer
+
+[![CI](https://github.com/MJKWoolnough/httpbuffer/actions/workflows/go-checks.yml/badge.svg)](https://github.com/MJKWoolnough/httpbuffer/actions)
+[![Go Reference](https://pkg.go.dev/badge/vimagination.zapto.org/httpbuffer.svg)](https://pkg.go.dev/vimagination.zapto.org/httpbuffer)
+[![Go Report Card](https://goreportcard.com/badge/vimagination.zapto.org/httpbuffer)](https://goreportcard.com/report/vimagination.zapto.org/httpbuffer)
+
 --
     import "vimagination.zapto.org/httpbuffer"
 
-Package httpbuffer provides a buffer for HTTP requests so that the
-Content-Length may be set and compression applied for dynamic pages.
+Package httpbuffer provides a buffer for HTTP requests so that the `Content-Length` may be set and compression applied for dynamic pages.
+
+## Highlights
+
+ - Buffer HTTP responses before sending them to the client.
+ - Automatically sets `Content-Length` header.
+ - Supports optional compression which is automatically applied based on `Accept-Encoding` header.
+   - Import `vimagination.zapto.org/httpbuffer/{brotli,deflate,gzip}` to support compression.
 
 ## Usage
 
 ```go
-var (
-	// BufferSize determines the initial size of the buffer
-	BufferSize = 128 << 10
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+
+	"vimagination.zapto.org/httpbuffer"
+	_ "vimagination.zapto.org/httpbuffer/gzip"
 )
-```
 
-#### func  Register
+func handler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Hello, World!")
+}
 
-```go
-func Register(e Encoding)
-```
-Register registers the encoding for the buffers to use. Should not be used
-passed initialisation.
+func main() {
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/", nil)
 
-#### type Encoding
+	handler(w, r)
 
-```go
-type Encoding interface {
-	// Open takes a buffer and returns an encoder-wrapped buffer.
-	Open(io.Writer) io.Writer
+	fmt.Println(w.Result().ContentLength)
 
-	// Close returns the encoder-wrapped buffer to flush/close and release
-	// resources.
-	Close(io.Writer)
+	w = httptest.NewRecorder()
+	buf := httpbuffer.Handler{Handler: http.HandlerFunc(handler)}
+	buf.ServeHTTP(w, r)
 
-	// Name returns the identifier for the encoding algorithm.
-	Name() string
+	fmt.Println(w.Result().ContentLength)
+	fmt.Println(w.Body)
+
+	// Output:
+	// -1
+	// 13
+	// Hello, World!
 }
 ```
 
-Encoding represents a type that applies a Coding to a byte stream.
+## Documentation
 
-#### type Handler
+Full API docs can be found at:
 
-```go
-type Handler struct {
-	http.Handler
-}
-```
-
-Handler wraps a http.Handler and provides a buffer and possible gzip
-compression. It buffers the Writes and sends the Content-Length header before
-Writing the buffer to the client.
-
-#### func (Handler) ServeHTTP
-
-```go
-func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
-```
-ServeHTTP implements the http.Handler interface.
+https://pkg.go.dev/vimagination.zapto.org/httpbuffer

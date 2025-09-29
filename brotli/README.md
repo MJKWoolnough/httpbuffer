@@ -5,6 +5,8 @@
 Package brotli provides an Encoder for the httpbuffer package that uses brotli
 compression.
 
+Import into `vimagination.zapto.org/httpbuffer` to add brotli compression support.
+
 ## Usage
 
 ```go

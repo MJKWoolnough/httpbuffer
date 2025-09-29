@@ -2,8 +2,9 @@
 --
     import "vimagination.zapto.org/httpbuffer/gzip"
 
-Package gzip provides an Encoder for the httpbuffer package that uses gzip
-compression.
+Package gzip provides an Encoder for the httpbuffer package that uses gzip compression.
+
+Import into `vimagination.zapto.org/httpbuffer` to add gzip compression support.
 
 ## Usage
 

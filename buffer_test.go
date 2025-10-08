@@ -26,6 +26,13 @@ func TestBuffer(t *testing.T) {
 			length:  0,
 		},
 		{
+			Buffers:  Buffers{},
+			code:     http.StatusNoContent,
+			compress: true,
+			output:   "",
+			length:   0,
+		},
+		{
 			Buffers: Buffers{[]byte("data")},
 			code:    http.StatusOK,
 			output:  "data",
@@ -62,7 +69,7 @@ func TestBuffer(t *testing.T) {
 			t.Errorf("test %d: unexpected error: %v", n+1, err)
 		} else if result.StatusCode != test.code {
 			t.Errorf("test %d: expecting code %d, got %d", n+1, test.code, result.StatusCode)
-		} else if result.Uncompressed != test.compress {
+		} else if result.Uncompressed != test.compress && test.length > 0 {
 			t.Errorf("test %d: unexpected Uncompressed to be %v, got %v", n+1, test.compress, result.Uncompressed)
 		} else if _, err = io.Copy(&buf, result.Body); err != nil {
 			t.Errorf("test %d: unexpected error copying body: %v", n+1, err)

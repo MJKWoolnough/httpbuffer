@@ -71,22 +71,21 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	encoding.Close(resp.Writer)
 
-	written := resp.Buffer.Len()
+	if resp.written {
+		if enc := encoding.Name(); enc != "" {
+			w.Header().Set("Content-Encoding", enc)
+		}
 
-	if written == 0 {
-	} else if enc := encoding.Name(); enc != "" {
-		w.Header().Set("Content-Encoding", enc)
+		w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))
 	}
-
-	w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))
 
 	if resp.Status > 0 {
 		w.WriteHeader(resp.Status)
-	} else if written == 0 {
+	} else if !resp.written {
 		w.WriteHeader(http.StatusNoContent)
 	}
 
-	if written > 0 {
+	if resp.written {
 		w.Write(resp.Buffer.Bytes())
 	}
 
@@ -97,11 +96,18 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type responseWriter struct {
-	Status int
+	written bool
+	Status  int
 	io.Writer
 	Buffer bytes.Buffer
 }
 
 func (r *responseWriter) WriteHeader(s int) {
 	r.Status = s
+}
+
+func (r *responseWriter) Write(p []byte) (int, error) {
+	r.written = r.written || len(p) > 0
+
+	return r.Writer.Write(p)
 }

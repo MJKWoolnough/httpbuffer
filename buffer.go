@@ -91,6 +91,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp.Status = 0
 	resp.Writer = nil
+	resp.written = false
 	resp.Buffer.Reset()
 	responsePool.Put(resp)
 }

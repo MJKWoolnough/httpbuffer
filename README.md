@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/MJKWoolnough/httpbuffer/actions/workflows/go-checks.yml/badge.svg)](https://github.com/MJKWoolnough/httpbuffer/actions)
 [![Go Reference](https://pkg.go.dev/badge/vimagination.zapto.org/httpbuffer.svg)](https://pkg.go.dev/vimagination.zapto.org/httpbuffer)
-[![Go Report Card](https://goreportcard.com/badge/vimagination.zapto.org/httpbuffer)](https://goreportcard.com/report/vimagination.zapto.org/httpbuffer)
 
 --
     import "vimagination.zapto.org/httpbuffer"

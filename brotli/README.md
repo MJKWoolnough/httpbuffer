@@ -5,13 +5,11 @@
 Package brotli provides an Encoder for the httpbuffer package that uses brotli
 compression.
 
-Import into `vimagination.zapto.org/httpbuffer` to add brotli compression support.
-
 ## Usage
 
 ```go
-var Compression = cbrotli.WriterOptions{
-	Quality: 4,
-}
+var (
+	// Compression sets the compression level for the brotli encoder.
+	Compression = brrr.BestCompression
+)
 ```
-Compression sets the compression options for the brotli encoder.

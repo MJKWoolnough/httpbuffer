@@ -4,32 +4,48 @@ package brotli // import "vimagination.zapto.org/httpbuffer/brotli"
 
 import (
 	"io"
+	"sync"
 
-	"github.com/google/brotli/go/cbrotli"
+	"github.com/molecule-man/go-brrr"
 	"vimagination.zapto.org/httpbuffer"
 )
 
-type cbrotliWriter struct {
-	*cbrotli.Writer
+type brotliWriter struct {
+	*brrr.Writer
 }
 
-func (c cbrotliWriter) WriteString(str string) (int, error) {
-	return c.Write([]byte(str))
+func (b brotliWriter) WriteString(str string) (int, error) {
+	return b.Write([]byte(str))
 }
 
-// Compression sets the compression options for the brotli encoder.
-var Compression = cbrotli.WriterOptions{
-	Quality: 4,
-}
+var (
+	// Compression sets the compression level for the brotli encoder.
+	Compression = brrr.BestCompression
+
+	pool = sync.Pool{
+		New: func() interface{} {
+			b, _ := brrr.NewWriter(nil, Compression)
+
+			return brotliWriter{b}
+		},
+	}
+)
 
 type encoding struct{}
 
 func (encoding) Open(w io.Writer) io.Writer {
-	return cbrotliWriter{cbrotli.NewWriter(w, Compression)}
+	b := pool.Get().(brotliWriter)
+
+	b.Reset(w)
+
+	return b
 }
 
 func (encoding) Close(w io.Writer) {
-	w.(cbrotliWriter).Close()
+	b := w.(brotliWriter)
+
+	b.Close()
+	pool.Put(w)
 }
 
 func (encoding) Name() string {

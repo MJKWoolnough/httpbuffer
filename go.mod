@@ -8,4 +8,4 @@ require (
 	vimagination.zapto.org/httpwrap v1.0.1
 )
 
-require github.com/klauspost/compress v1.19.1 // indirect
+require github.com/klauspost/compress v1.19.1

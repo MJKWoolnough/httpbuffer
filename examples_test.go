@@ -1,35 +1,73 @@
 package httpbuffer_test
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
 	"vimagination.zapto.org/httpbuffer"
+	_ "vimagination.zapto.org/httpbuffer/gzip"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Hello, World!")
+	for range 1000 {
+		io.WriteString(w, "Hello, World!\n")
+	}
 }
 
 func Example() {
-	w := httptest.NewRecorder()
-	r, _ := http.NewRequest(http.MethodGet, "/", nil)
+	srv := httptest.NewServer(http.HandlerFunc(handler))
+	defer srv.Close()
 
-	handler(w, r)
+	resp, err := srv.Client().Get(srv.URL)
+	if err != nil {
+		fmt.Println(err)
 
-	fmt.Println(w.Result().ContentLength)
+		return
+	}
 
-	w = httptest.NewRecorder()
-	buf := httpbuffer.Handler{Handler: http.HandlerFunc(handler)}
-	buf.ServeHTTP(w, r)
+	fmt.Println(resp.ContentLength)
+	io.Copy(os.Stdout, io.LimitReader(resp.Body, 14))
 
-	fmt.Println(w.Result().ContentLength)
-	fmt.Println(w.Body)
+	srv = httptest.NewServer(httpbuffer.Handler{Handler: http.HandlerFunc(handler)})
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
+	req.Header.Set("Accept-Encoding", "identity")
+
+	resp, err = srv.Client().Do(req)
+	if err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	fmt.Println(resp.ContentLength)
+	io.Copy(os.Stdout, io.LimitReader(resp.Body, 14))
+
+	req, _ = http.NewRequest(http.MethodGet, srv.URL, nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	resp, err = srv.Client().Do(req)
+	if err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	g, _ := gzip.NewReader(resp.Body)
+
+	fmt.Println(resp.ContentLength)
+	io.Copy(os.Stdout, io.LimitReader(g, 14))
 
 	// Output:
 	// -1
-	// 13
+	// Hello, World!
+	// 14000
+	// Hello, World!
+	// 87
 	// Hello, World!
 }

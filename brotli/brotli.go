@@ -1,5 +1,8 @@
 // Package brotli provides an Encoder for the httpbuffer package that uses
 // brotli compression.
+//
+// Deprecated: Use httpencoding.New instead, and supply the httpencoding.Brotli
+// option.
 package brotli // import "vimagination.zapto.org/httpbuffer/brotli"
 
 import (

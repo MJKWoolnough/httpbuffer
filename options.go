@@ -4,6 +4,8 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"io"
+
+	"github.com/molecule-man/go-brrr"
 )
 
 type Option func(*Handler)
@@ -59,5 +61,34 @@ func Deflate(compressionLevel int) Option {
 	return func(h *Handler) {
 		h.encodings = append(h.encodings, "deflate")
 		h.compressors["deflate"] = deflateEncoding(compressionLevel)
+	}
+}
+
+type brotliEncoding int
+
+func (b brotliEncoding) Open(w io.Writer) io.Writer {
+	dw, _ := brrr.NewWriter(w, int(b))
+
+	return dw
+}
+
+func (brotliEncoding) Close(w io.Writer) {
+	w.(*brrr.Writer).Close()
+}
+
+func (brotliEncoding) Name() string {
+	return "br"
+}
+
+func Brotli(compressionLevel int) Option {
+	if compressionLevel < 0 {
+		compressionLevel = brrr.BestSpeed
+	} else if compressionLevel > 11 {
+		compressionLevel = brrr.BestCompression
+	}
+
+	return func(h *Handler) {
+		h.encodings = append(h.encodings, "br")
+		h.compressors["br"] = brotliEncoding(compressionLevel)
 	}
 }

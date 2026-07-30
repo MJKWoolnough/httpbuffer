@@ -1,5 +1,8 @@
 // Package deflate provides an Encoder for the httpbuffer package that uses
 // deflate compression
+//
+// Deprecated: Use httpencoding.New instead, and supply the httpencoding.Deflate
+// option.
 package deflate // import "vimagination.zapto.org/httpbuffer/deflate"
 
 import (

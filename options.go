@@ -1,19 +1,12 @@
 package httpbuffer
 
 import (
+	"compress/flate"
 	"compress/gzip"
 	"io"
 )
 
 type Option func(*Handler)
-
-type gzipWriter struct {
-	*gzip.Writer
-}
-
-func (g gzipWriter) WriteString(str string) (int, error) {
-	return g.Write([]byte(str))
-}
 
 type gzipEncoding int
 
@@ -39,5 +32,32 @@ func Gzip(compressionLevel int) Option {
 	return func(h *Handler) {
 		h.encodings = append(h.encodings, "gzip")
 		h.compressors["gzip"] = gzipEncoding(compressionLevel)
+	}
+}
+
+type deflateEncoding int
+
+func (d deflateEncoding) Open(w io.Writer) io.Writer {
+	dw, _ := flate.NewWriter(w, int(d))
+
+	return dw
+}
+
+func (deflateEncoding) Close(w io.Writer) {
+	w.(*flate.Writer).Close()
+}
+
+func (deflateEncoding) Name() string {
+	return "deflate"
+}
+
+func Deflate(compressionLevel int) Option {
+	if compressionLevel < flate.HuffmanOnly || compressionLevel > flate.BestCompression {
+		compressionLevel = flate.DefaultCompression
+	}
+
+	return func(h *Handler) {
+		h.encodings = append(h.encodings, "deflate")
+		h.compressors["deflate"] = deflateEncoding(compressionLevel)
 	}
 }

@@ -29,26 +29,36 @@ var (
 // before Writing the buffer to the client.
 type Handler struct {
 	http.Handler
+	encodings   []httpencoding.Encoding
+	compressors map[httpencoding.Encoding]Encoding
 }
 
-type encodingType struct {
-	Encoding
-}
-
-func (e *encodingType) Handle(encoding httpencoding.Encoding) (ok bool) {
-	if httpencoding.IsWildcard(encoding) && !httpencoding.IsDisallowedInWildcard(encoding, "") {
-		e.Encoding = encodings[""]
-
-		return false
+func New(handler http.Handler, opts ...Option) *Handler {
+	h := &Handler{
+		Handler:     handler,
+		compressors: make(map[httpencoding.Encoding]Encoding),
 	}
 
-	e.Encoding, ok = encodings[encoding]
+	for _, opt := range opts {
+		opt(h)
+	}
 
-	return ok
+	h.encodings = append(h.encodings, "")
+	h.compressors[""] = identity{}
+
+	return h
 }
 
 // ServeHTTP implements the http.Handler interface.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	order := order
+	encodings := encodings
+
+	if h.encodings != nil {
+		order = h.encodings
+		encodings = h.compressors
+	}
+
 	enc, ok := httpencoding.Negotiate(r, order...)
 	if !ok {
 		httpencoding.InvalidEncoding(w)

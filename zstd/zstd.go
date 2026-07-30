@@ -1,5 +1,8 @@
 // Package zstd provides an Encoder for the httpbuffer package that uses zstd
 // compression.
+//
+// Deprecated: Use httpencoding.New instead, and supply the httpencoding.Ztsd
+// option.
 package zstd // import "vimagination.zapto.org/httpbuffer/zstd"
 
 import (

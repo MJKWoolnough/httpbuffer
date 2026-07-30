@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"io"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/molecule-man/go-brrr"
 )
 
@@ -90,5 +91,34 @@ func Brotli(compressionLevel int) Option {
 	return func(h *Handler) {
 		h.encodings = append(h.encodings, "br")
 		h.compressors["br"] = brotliEncoding(compressionLevel)
+	}
+}
+
+type zstdEncoding int
+
+func (z zstdEncoding) Open(w io.Writer) io.Writer {
+	dw, _ := zstd.NewWriter(w, zstd.WithEncoderLevel(zstd.EncoderLevel(z)))
+
+	return dw
+}
+
+func (zstdEncoding) Close(w io.Writer) {
+	w.(*zstd.Encoder).Close()
+}
+
+func (zstdEncoding) Name() string {
+	return "zstd"
+}
+
+func Zstd(compressionLevel zstd.EncoderLevel) Option {
+	if compressionLevel < zstd.SpeedFastest {
+		compressionLevel = zstd.SpeedFastest
+	} else if compressionLevel > zstd.SpeedBestCompression {
+		compressionLevel = zstd.SpeedBestCompression
+	}
+
+	return func(h *Handler) {
+		h.encodings = append(h.encodings, "zstd")
+		h.compressors["zstd"] = zstdEncoding(compressionLevel)
 	}
 }

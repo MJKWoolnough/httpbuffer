@@ -1,5 +1,8 @@
 // Package gzip provides an Encoder for the httpbuffer package that uses gzip
 // compression.
+//
+// Deprecated: Use httpencoding.New instead, and supply the httpencoding.Gzip
+// option.
 package gzip // import "vimagination.zapto.org/httpbuffer/gzip"
 
 import (

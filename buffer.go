@@ -49,11 +49,8 @@ func (e *encodingType) Handle(encoding httpencoding.Encoding) (ok bool) {
 
 // ServeHTTP implements the http.Handler interface.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var encoding encodingType
-
-	httpencoding.HandleEncoding(r, &encoding)
-
-	if encoding.Encoding == nil {
+	enc, ok := httpencoding.Negotiate(r, order...)
+	if !ok {
 		httpencoding.InvalidEncoding(w)
 
 		return
@@ -61,6 +58,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	httpencoding.ClearEncoding(r)
 
+	encoding := encodings[enc]
 	resp := responsePool.Get().(*responseWriter)
 	resp.Writer = encoding.Open(&resp.Buffer)
 
@@ -72,8 +70,8 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	encoding.Close(resp.Writer)
 
 	if resp.written {
-		if enc := encoding.Name(); enc != "" {
-			w.Header().Set("Content-Encoding", enc)
+		if enc != "" {
+			w.Header().Set("Content-Encoding", string(enc))
 		}
 
 		w.Header().Set("Content-Length", strconv.Itoa(resp.Buffer.Len()))

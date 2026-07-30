@@ -2,6 +2,7 @@ package httpbuffer
 
 import (
 	"io"
+	"slices"
 
 	"vimagination.zapto.org/httpencoding"
 )
@@ -35,8 +36,11 @@ type Encoding interface {
 	Name() string
 }
 
+var order = []httpencoding.Encoding{""}
+
 // Register registers the encoding for the buffers to use. Should not be used
 // passed initialisation.
 func Register(e Encoding) {
 	encodings[httpencoding.Encoding(e.Name())] = e
+	order = slices.Insert(order, len(order)-1, httpencoding.Encoding(e.Name()))
 }

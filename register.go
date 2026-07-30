@@ -40,6 +40,8 @@ var order = []httpencoding.Encoding{""}
 
 // Register registers the encoding for the buffers to use. Should not be used
 // passed initialisation.
+//
+// Deprecated: Use the New function and supply compressor options instead.
 func Register(e Encoding) {
 	encodings[httpencoding.Encoding(e.Name())] = e
 	order = slices.Insert(order, len(order)-1, httpencoding.Encoding(e.Name()))

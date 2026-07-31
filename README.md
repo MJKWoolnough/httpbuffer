@@ -13,7 +13,6 @@ Package httpbuffer provides a buffer for HTTP requests so that the `Content-Leng
  - Buffer HTTP responses before sending them to the client.
  - Automatically sets `Content-Length` header.
  - Supports optional compression which is automatically applied based on `Accept-Encoding` header.
- - Import `vimagination.zapto.org/httpbuffer/{brotli,deflate,gzip,zstandard}` to support compression.
 
 ## Usage
 

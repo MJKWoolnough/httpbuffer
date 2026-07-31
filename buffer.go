@@ -56,6 +56,27 @@ func New(handler http.Handler, opts ...Option) *Handler {
 
 // ServeHTTP implements the http.Handler interface.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	encoding := h.getEncoding(r)
+	if encoding == nil {
+		httpencoding.InvalidEncoding(w)
+
+		return
+	}
+
+	resp := responsePool.Get().(*responseWriter)
+	resp.Writer = encoding.Open(&resp.Buffer)
+
+	defer resp.cleanup()
+
+	h.Handler.ServeHTTP(
+		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(nil), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
+		r,
+	)
+	encoding.Close(resp.Writer)
+	h.writeResponse(w, resp, encoding.Name())
+}
+
+func (h *Handler) getEncoding(r *http.Request) Encoding {
 	order := order
 	encodings := encodings
 
@@ -66,24 +87,15 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	enc, ok := httpencoding.Negotiate(r, order...)
 	if !ok {
-		httpencoding.InvalidEncoding(w)
-
-		return
+		return nil
 	}
 
 	httpencoding.ClearEncoding(r)
 
-	encoding := encodings[enc]
-	resp := responsePool.Get().(*responseWriter)
-	resp.Writer = encoding.Open(&resp.Buffer)
+	return encodings[enc]
+}
 
-	h.Handler.ServeHTTP(
-		httpwrap.Wrap(w, httpwrap.OverrideWriter(resp), httpwrap.OverrideHeaderWriter(resp), httpwrap.OverrideStringWriter(nil), httpwrap.OverrideFlusher(nil), httpwrap.OverrideHijacker(nil)),
-		r,
-	)
-
-	encoding.Close(resp.Writer)
-
+func (h *Handler) writeResponse(w http.ResponseWriter, resp *responseWriter, enc string) {
 	if resp.written {
 		if enc != "" {
 			w.Header().Set("Content-Encoding", string(enc))
@@ -101,12 +113,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if resp.written {
 		w.Write(resp.Buffer.Bytes())
 	}
-
-	resp.Status = 0
-	resp.Writer = nil
-	resp.written = false
-	resp.Buffer.Reset()
-	responsePool.Put(resp)
 }
 
 type responseWriter struct {
@@ -124,4 +130,12 @@ func (r *responseWriter) Write(p []byte) (int, error) {
 	r.written = r.written || len(p) > 0
 
 	return r.Writer.Write(p)
+}
+
+func (r *responseWriter) cleanup() {
+	r.Status = 0
+	r.Writer = nil
+	r.written = false
+	r.Buffer.Reset()
+	responsePool.Put(r)
 }

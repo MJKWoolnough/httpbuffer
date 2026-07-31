@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"vimagination.zapto.org/httpbuffer"
-	_ "vimagination.zapto.org/httpbuffer/gzip"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +31,7 @@ func Example() {
 	fmt.Println(resp.ContentLength)
 	io.Copy(os.Stdout, io.LimitReader(resp.Body, 14))
 
-	srv = httptest.NewServer(httpbuffer.Handler{Handler: http.HandlerFunc(handler)})
+	srv = httptest.NewServer(httpbuffer.New(http.HandlerFunc(handler), httpbuffer.Gzip(gzip.DefaultCompression)))
 	defer srv.Close()
 
 	req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)

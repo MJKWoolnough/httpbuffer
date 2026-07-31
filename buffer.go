@@ -19,15 +19,25 @@ var responsePool = sync.Pool{
 	},
 }
 
-// Handler wraps a http.Handler and provides a buffer and possible gzip
-// compression. It buffers the Writes and sends the Content-Length header
-// before Writing the buffer to the client.
+// Handler wraps a http.Handler and provides a buffer and possible compression.
+// It buffers the Writes and sends the Content-Length header before Writing the
+// buffer to the client.
 type Handler struct {
 	http.Handler
 	encodings   []httpencoding.Encoding
 	compressors map[httpencoding.Encoding]Encoding
 }
 
+// New wraps the given handler to buffer all writes, optionally compressing
+// before sending the data to the client.
+//
+// Unless specifically overridden by using the http.ResponseWriter.WriteHeader
+// method, an empty buffer will generate a 204 No Content response instead of
+// the default 200 OK response.
+//
+// When negotiating the encoding, the order of the compression options will
+// determine the preference order, with the first being given the highest
+// priority.
 func New(handler http.Handler, opts ...Option) *Handler {
 	h := &Handler{
 		Handler:     handler,

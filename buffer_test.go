@@ -1,4 +1,4 @@
-package httpbuffer_test
+package httpbuffer
 
 import (
 	"compress/gzip"
@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"vimagination.zapto.org/httpbuffer"
 )
 
 func TestBuffer(t *testing.T) {
@@ -52,11 +50,9 @@ func TestBuffer(t *testing.T) {
 			length:   12,
 		},
 	} {
-
-		server := httptest.NewServer(httpbuffer.New(test.Buffers, httpbuffer.Gzip(gzip.DefaultCompression)))
-
 		var buf strings.Builder
 
+		server := httptest.NewServer(New(test.Buffers, Gzip(gzip.DefaultCompression)))
 		r, _ := http.NewRequest(http.MethodGet, server.URL, nil)
 
 		if !test.compress {

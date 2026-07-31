@@ -13,16 +13,11 @@ import (
 	"vimagination.zapto.org/httpwrap"
 )
 
-var (
-	// BufferSize determines the initial size of the buffer
-	BufferSize = 128 << 10
-
-	responsePool = sync.Pool{
-		New: func() any {
-			return new(responseWriter)
-		},
-	}
-)
+var responsePool = sync.Pool{
+	New: func() any {
+		return new(responseWriter)
+	},
+}
 
 // Handler wraps a http.Handler and provides a buffer and possible gzip
 // compression. It buffers the Writes and sends the Content-Length header

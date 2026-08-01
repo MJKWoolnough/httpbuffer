@@ -77,6 +77,18 @@ func TestBuffer(t *testing.T) {
 	}
 }
 
+func TestInvalidEncoding(t *testing.T) {
+	server := httptest.NewServer(New(Buffers{}, Gzip(gzip.DefaultCompression)))
+	r, _ := http.NewRequest(http.MethodGet, server.URL, nil)
+	r.Header.Set("Accept-Encoding", "identity;q=0")
+
+	if result, err := server.Client().Do(r); err != nil {
+		t.Errorf("unexpected error: %s", err)
+	} else if result.StatusCode != http.StatusNotAcceptable {
+		t.Errorf("expecting response code %d, got %d", http.StatusNotAcceptable, result.StatusCode)
+	}
+}
+
 type Buffers [][]byte
 
 func (b Buffers) ServeHTTP(w http.ResponseWriter, _ *http.Request) {

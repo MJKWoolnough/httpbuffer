@@ -89,6 +89,24 @@ func TestInvalidEncoding(t *testing.T) {
 	}
 }
 
+func TestCustomStatusCode(t *testing.T) {
+	server := httptest.NewServer(New(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		io.WriteString(w, "bad")
+	}), Gzip(gzip.DefaultCompression)))
+	r, _ := http.NewRequest(http.MethodGet, server.URL, nil)
+
+	if result, err := server.Client().Do(r); err != nil {
+		t.Errorf("unexpected error: %s", err)
+	} else if result.StatusCode != http.StatusConflict {
+		t.Errorf("expecting response code %d, got %d", http.StatusConflict, result.StatusCode)
+	} else if data, err := io.ReadAll(result.Body); err != nil {
+		t.Errorf("unexpected error: %s", err)
+	} else if string(data) != "bad" {
+		t.Errorf("expecting output %q, got %q", "bad", data)
+	}
+}
+
 type Buffers [][]byte
 
 func (b Buffers) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
